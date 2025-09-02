@@ -1,4 +1,5 @@
-# Seq-Y 
-/'si:.ki/
+# Seq-Y
+/'siː.ki/
 
 ## NGS Analysis Pipelines
+
