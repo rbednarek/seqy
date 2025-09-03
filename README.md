@@ -52,10 +52,10 @@ Required parameters:
 
     
 Optional parameters:
-- outdir           Output directory (default: ./results)
-- merged           Merge reads with bbmerge before UMI extraction (default: false)
-- umi_len          UMI length in bp (default: 12) - Omit this parameter to disable UMI extraction
-- umi_regex        UMI regex pattern, expect UMI downstream of this seq (default: ATCGTCGGA)
+- **--outdir** - Output directory (default: ./results)
+- **--merged** - Merge reads with bbmerge before UMI extraction (default: false)
+- **--umi_len** - UMI length in bp (default: 12) - Omit this parameter to disable UMI extraction
+- **--umi_regex** - UMI regex pattern, expect UMI downstream of this seq (default: ATCGTCGGA)
 
 Help:
 
