@@ -1,7 +1,6 @@
 # Seq-Y
 `/'siː.ki/`
 
-## NGS Analysis Pipelines
 Pipeline written in Nextflow and Snakemake for standard NGS analysis. Includes read processing, alignment and optional UMI-based deduplication functionality.  
 
 ## Installation
@@ -18,18 +17,18 @@ cd seqy
 
 Run the config script to create a new conda environment and install all required dependencies.
 
-Nextflow:
+**Nextflow:**
 ```bash
 bash ./config.sh nextflow
 ```
-Snakemake:
+**Snakemake:**
 ```bash
 bash ./config.sh snakemake
 ```
 This script will:
 - Create a new conda environment named `seqy`
 - Install workflow manager and other required software packages
-- Note: If you want to install both nextflow and snakemake in this environment simply run `bash ./config.sh`
+- **Note:** If you want to install both nextflow and snakemake in this environment simply run `bash ./config.sh`
 
 ### Step 3: Activate the Envrionment
 
@@ -48,8 +47,8 @@ nextflow run ./nextflow_pipeline/seqy.nf --samplesheet samples.csv --reference_g
 ```
     
 Required parameters:
-- samplesheet       CSV file with columns: sample_name,R1,R2
-- reference_genome  Path to reference genome FASTA file
+- **--samplesheet** - CSV file with columns: sample_name,R1,R2
+- **--reference_genome** - Path to reference genome FASTA file
 
     
 Optional parameters:
