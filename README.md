@@ -4,7 +4,7 @@
 ## NGS Analysis Pipelines
 Pipeline written in Nextflow and Snakemake for standard NGS analysis. Includes read processing, alignment and optional UMI-based deduplication functionality.  
 
-## Nextflow
+## Installation
 
 ### Step 1: Clone the Repository
 
@@ -18,14 +18,18 @@ cd seqy
 
 Run the config script to create a new conda environment and install all required dependencies.
 
+Nextflow:
 ```bash
 bash ./config.sh nextflow
 ```
-
+Snakemake:
+```bash
+bash ./config.sh snakemake
+```
 This script will:
 - Create a new conda environment named `seqy`
-- Install nextflow and other required software packages
-- Note: If you want to install both snakemake and nextflow in this environment just run `bash ./config.sh`
+- Install workflow manager and other required software packages
+- Note: If you want to install both nextflow and snakemake in this environment simply run `bash ./config.sh`
 
 ### Step 3: Activate the Envrionment
 
@@ -35,7 +39,7 @@ After the setup script completes, activate the conda environment if necessary:
 conda activate seqy
 ```
 
-### Step 4: Run Pipeline
+## Nextflow Pipeline
 
 Basic Usage:
 
@@ -44,15 +48,15 @@ nextflow run ./nextflow_pipeline/seqy.nf --samplesheet samples.csv --reference_g
 ```
     
 Required parameters:
---samplesheet       CSV file with columns: sample_name,R1,R2
---reference_genome  Path to reference genome FASTA file
+- samplesheet       CSV file with columns: sample_name,R1,R2
+- reference_genome  Path to reference genome FASTA file
 
     
 Optional parameters:
---outdir           Output directory (default: ./results)
---merged           Merge reads with bbmerge before UMI extraction (default: false)
---umi_len          UMI length in bp (default: 12) - Omit this parameter to disable UMI extraction
---umi_regex        UMI regex pattern, expect UMI downstream of this seq (default: ATCGTCGGA)
+- outdir           Output directory (default: ./results)
+- merged           Merge reads with bbmerge before UMI extraction (default: false)
+- umi_len          UMI length in bp (default: 12) - Omit this parameter to disable UMI extraction
+- umi_regex        UMI regex pattern, expect UMI downstream of this seq (default: ATCGTCGGA)
 
 Help:
 
@@ -73,3 +77,5 @@ If you encounter any issues:
 - Conda package manager
 
 For additional support or questions, please refer to the application documentation or contact the development team.
+
+
