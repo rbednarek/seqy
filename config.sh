@@ -55,15 +55,16 @@ else
     echo "Miniconda installed successfully"
 fi
 
-echo "Initializing conda..."
-source "$MINICONDA_DIR/bin/activate"
-conda init bash
+#echo "Initializing conda..."
+#source "$MINICONDA_DIR/bin/activate"
+#conda init bash
 
 source ~/.bashrc 2>/dev/null || source ~/.bash_profile 2>/dev/null || true
 
 echo "Updating conda..."
 conda update -n base -c defaults conda -y
-
+# echo 'working on mamba install'
+# conda install -n base -c conda-forge mamba
 
 base_pkgs=(
     python=3.10
@@ -92,12 +93,16 @@ case "$workflow" in
         ;;
 esac
 
-conda create -n seqy -y -c conda-forge -c bioconda \
+mamba create -n seqy -y -c conda-forge -c bioconda \
     "${base_pkgs[@]}" \
     "${workflow_pkgs[@]}"
 
+#conda create -n seqy -y -c bioconda bowtie2 bbmap umi_tools samtools fastqc multiqc
+
 echo "✅ Base environment created. Activating environment..."
 conda activate seqy
+
+#conda install -y -c conda-forge "${workflow_pkgs[@]}"
 
 echo "Activating seqy environment..."
 source "$MINICONDA_DIR/bin/activate" seqy
