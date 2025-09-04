@@ -165,7 +165,7 @@ process UMI_EXTRACT_MERGED {
     """
     umi_tools extract \\
         --extract-method=regex \\
-        --bc-pattern="(?<=${params.umi_regex}).{${params.umi_len}}" \\
+        --bc-pattern=".{${params.umi_len}}(?=${params.umi_regex})" \\
         --stdin=$merged_reads \\
         --stdout=${sample_name}_extracted.fastq.gz \\
         2> ${sample_name}_umi_extract.log
@@ -187,7 +187,7 @@ process UMI_EXTRACT_PAIRED {
     """
     umi_tools extract \\
         --extract-method=regex \\
-        --bc-pattern="(?<=ATCGTCGGA).{${params.umi_len}}" \\
+        --bc-pattern=".{${params.umi_len}}(?=${params.umi_regex})" \\
         --stdin=$r1 \\
         --stdout=${sample_name}_extracted_R1.fastq.gz \\
         --read2-in=$r2 \\

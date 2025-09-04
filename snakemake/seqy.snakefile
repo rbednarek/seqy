@@ -76,7 +76,7 @@ rule umi_extract_merged:
         """
         umi_tools extract \
             --extract-method=regex \
-            --bc-pattern="(?<={params.pattern}).{{{params.len}}}" \
+            --bc-pattern=".{${params.umi_len}}(?=${params.umi_regex})" \
             --stdin={input.merged} \
             --stdout={output.fastq} \
             2> {outdir}/umi/{sample}_extracted.log
@@ -96,7 +96,7 @@ rule umi_extract_paired:
         """
         umi_tools extract \
             --extract-method=regex \
-            --bc-pattern="(?<={params.pattern}).{{{params.len}}}" \
+            --bc-pattern=".{${params.umi_len}}(?=${params.umi_regex})" \
             --stdin={input.r1} \
             --stdout={output.r1} \
             --read2-in={input.r2} \
