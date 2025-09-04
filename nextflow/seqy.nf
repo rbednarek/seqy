@@ -32,8 +32,8 @@ if (params.help) {
     Optional parameters:
     --outdir           Output directory (default: ./results)
     --merged           Merge reads with bbmerge before UMI extraction (default: false)
-    --umi_len          UMI length in bp (default: 12) - Omit this parameter to disable UMI extraction
-    --umi_regex        UMI regex pattern, expect UMI seq downstream  (default: ATCGTCGGA) 
+    --umi_len          UMI length in bp - Omit this parameter to disable UMI extraction
+    --umi_regex        UMI regex pattern, expect UMI seq downstream (default: ATCGTCGGA) 
     --help             Show this help message
     """
     exit 0
@@ -72,40 +72,44 @@ workflow {
     reference_ch = Channel.fromPath(params.reference_genome)
     
     // Pipeline steps
-    FASTQC(samples_ch)
+    fastqc_out = FASTQC(samples_ch)
     
-    // Merge-Aware UMI extraction (optional - contingent on umi len param)
+    // Conditional workflow based on merging and UMI extraction
     if (params.merged) {
-        BBMERGE(samples_ch)
+        bbmerge_out = BBMERGE(samples_ch)
         if (params.umi_len) {
-            UMI_EXTRACT_MERGED(BBMERGE.out)
-            processed_reads_ch = UMI_EXTRACT_MERGED.out.reads
+            umi_extract_out = UMI_EXTRACT_MERGED(bbmerge_out)
+            processed_reads_ch = umi_extract_out.reads
         } else {
-            processed_reads_ch = BBMERGE.out
+            processed_reads_ch = bbmerge_out
         }
     } else {
         if (params.umi_len) {
-            UMI_EXTRACT_PAIRED(samples_ch)
-            processed_reads_ch = UMI_EXTRACT_PAIRED.out.reads
+            umi_extract_out = UMI_EXTRACT_PAIRED(samples_ch)
+            processed_reads_ch = umi_extract_out.reads.map { sample, r1, r2 -> 
+                tuple(sample, [r1, r2]) 
+            }
         } else {
-            processed_reads_ch = samples_ch
+            processed_reads_ch = samples_ch.map { sample, r1, r2 -> 
+                tuple(sample, [r1, r2]) 
+            }
         }
     }
     
     // Alignment (Bowtie2)
-    ALIGN(processed_reads_ch, reference_ch)
+    align_out = ALIGN(processed_reads_ch, reference_ch)
 
     // UMI deduplication (optional - contingent on umi len param)
     if (params.umi_len) {
         if (params.merged) {
-            UMI_DEDUP_MERGED(ALIGN.out)
+            dedup_out = UMI_DEDUP_MERGED(align_out)
         } else {
-            UMI_DEDUP_PAIRED(ALIGN.out)
+            dedup_out = UMI_DEDUP_PAIRED(align_out)
         }
     }
     
-    // MultiQC
-    MULTIQC(file("${params.outdir}"))
+    // MultiQC - collect all FastQC outputs
+    MULTIQC(fastqc_out.collect())
 }
 
 /*
@@ -120,7 +124,7 @@ process FASTQC {
     tuple val(sample_name), path(r1), path(r2)
     
     output:
-    path "*.{html,zip}"
+    path "*_fastqc.{html,zip}"
     
     script:
     """
@@ -165,10 +169,10 @@ process UMI_EXTRACT_MERGED {
     """
     umi_tools extract \\
         --extract-method=regex \\
-        --bc-pattern=".{${params.umi_len}}(?=${params.umi_regex})" \\
+        --bc-pattern="(?P<umi_1>.{${params.umi_len}})(?P<discard_1>${params.umi_regex})" \\
         --stdin=$merged_reads \\
         --stdout=${sample_name}_extracted.fastq.gz \\
-        2> ${sample_name}_umi_extract.log
+        --log ${sample_name}_umi_extract.log
     """
 }
 
@@ -187,12 +191,12 @@ process UMI_EXTRACT_PAIRED {
     """
     umi_tools extract \\
         --extract-method=regex \\
-        --bc-pattern=".{${params.umi_len}}(?=${params.umi_regex})" \\
+        --bc-pattern="(?P<umi_1>.{${params.umi_len}})(?P<discard_1>${params.umi_regex})" \\
         --stdin=$r1 \\
         --stdout=${sample_name}_extracted_R1.fastq.gz \\
         --read2-in=$r2 \\
         --read2-out=${sample_name}_extracted_R2.fastq.gz \\
-        2> ${sample_name}_umi_extract.log
+        --log ${sample_name}_umi_extract.log
     """
 }
 
@@ -202,7 +206,7 @@ process ALIGN {
     
     input:
     tuple val(sample_name), path(reads)
-    path reference
+    each path(reference)
     
     output:
     tuple val(sample_name), path("${sample_name}.bam"), path("${sample_name}.bam.bai")
@@ -217,6 +221,10 @@ process ALIGN {
         
         # Align merged reads using Bowtie2
         bowtie2 -p $task.cpus \\
+            --local \\
+            --rg-id ${sample_name} \\
+            --rg SM:${sample_name} \\
+            --rg PL:ILLUMINA \\
             -x $reference \\
             -U $reads | \\
             samtools view -bS - | \\
@@ -238,6 +246,10 @@ process ALIGN {
         
         # Align paired reads using Bowtie2
         bowtie2 -p $task.cpus \\
+            --local \\
+            --rg-id ${sample_name} \\
+            --rg SM:${sample_name} \\
+            --rg PL:ILLUMINA \\
             -x $reference \\
             -1 ${reads[0]} \\
             -2 ${reads[1]} | \\
@@ -299,20 +311,18 @@ process UMI_DEDUP_PAIRED {
     """
 }
 
-
 process MULTIQC {
     publishDir "${params.outdir}/multiqc", mode: 'copy'
-    
+
     input:
     path fastqc_files
-    
+
     output:
-    path "multiqc_report.html"
-    path "multiqc_data"
-    
+    path 'multiqc_report.html'
+
     script:
     """
-    multiqc . --outdir . --force
+    multiqc . --force
     """
 }
 
@@ -323,7 +333,7 @@ workflow.onComplete {
     log.info """
     Pipeline completed!
     Merged reads: ${params.merged}
-    UMI extraction: ${params.umi_len}
+    UMI extraction: ${params.umi_len ? "${params.umi_len}bp UMIs extracted" : "disabled"}
     Results are in: ${params.outdir}
     """
 }
