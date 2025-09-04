@@ -115,8 +115,10 @@ rule align_merged:
     threads: 4
     shell:
         """
-        bowtie2-build {input.ref} {input.ref}
-        bowtie2 -p {threads} -x {input.ref} -U {input.fq} |
+        if [ ! -f {input.ref}.1.bt2 ]; then
+            bowtie2-build {input.ref} {input.ref}
+        fi
+        bowtie2 -p {threads} -x {input.ref} -U {input.fq} | samtools view -bS - |
             samtools sort -@ {threads} -o {output.bam}
         samtools index {output.bam}
         """
@@ -140,8 +142,10 @@ rule align_paired:
     threads: 4
     shell:
         """
-        bowtie2-build {input.ref} {input.ref}
-        bowtie2 -p {threads} -x {input.ref} -1 {input.r1} -2 {input.r2} |
+        if [ ! -f {input.ref}.1.bt2 ]; then
+            bowtie2-build {input.ref} {input.ref}
+        fi
+        bowtie2 -p {threads} -x {input.ref} -1 {input.r1} -2 {input.r2} | samtools view -bS - |
             samtools sort -@ {threads} -o {output.bam}
         samtools index {output.bam}
         """
