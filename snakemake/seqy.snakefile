@@ -1,6 +1,6 @@
 import pandas as pd
 
-config_yaml: "config.yaml"
+configfile: "config.yaml"
 
 samples = pd.read_csv(config["samplesheet"]).set_index("sample_name").T.to_dict()
 
