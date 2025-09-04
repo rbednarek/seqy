@@ -43,7 +43,7 @@ conda activate seqy
 Basic Usage:
 
 ```bash
-nextflow run ./nextflow_pipeline/seqy.nf --samplesheet samples.csv --reference_genome genome.fa
+nextflow run ./nextflow/seqy.nf --samplesheet samples.csv --reference_genome genome.fa
 ```
     
 Required parameters:
@@ -60,8 +60,37 @@ Optional parameters:
 Help:
 
 ```bash
-nextflow run ./nextflow_pipeline/seqy.nf --help
+nextflow run ./nextflow/seqy.nf --help
 ```
+
+## Snakemake Pipeline
+
+This version requires a YAML input file in addition to a Samplesheet.
+
+Basic Usage:
+
+```bash
+snakemake --snakefile ./snakemake/seqy.snakefile --configfile config.yaml --outdir ./results
+```
+
+Command Line Parameters:
+- **--configfile** - Config file in `yaml` format
+- **--cores** - Designate # of cores to use
+
+Config File Parameters:
+- **reference:** - Path to reference genome (ex. reference/genome.fa) **(Required)**
+- **samplesheet:** - CSV file with columns: sample_name,R1,R2 **(Required)**
+- **outdir:** - Results directory **(Required)**
+- **merged:** - Merge reads with bbmerge before UMI extraction **(Optional)**
+- **umi_len:** - UMI length in bp - Omit this parameter to disable UMI extraction **(Optional)**
+- **umi_regex:** - UMI regex pattern, expect UMI downstream of this seq **(Optional)**
+
+Help:
+```bash
+snakemake --help
+```
+
+An example config.yaml file can be found in the `./snakemake` folder.
 
 ## Troubleshooting
 
@@ -72,7 +101,7 @@ If you encounter any issues:
 
 ## Requirements
 
-- Nextflow
+- Nextflow/Snakemake
 - Conda package manager
 
 For additional support or questions, please refer to the application documentation or contact the development team.
