@@ -1,9 +1,15 @@
+# NGS Analysis Pipeline
+# Author: Ryland Bednarek
+
 import pandas as pd
 
+# Define configuration file
 configfile: "config.yaml"
 
+# Define samples from Samplesheet
 samples = pd.read_csv(config["samplesheet"]).set_index("sample_name").T.to_dict()
 
+# Conditionally define logic for rule all based on merging and presence of UMIs
 if config.get('umi_len'):
     final_bam = expand("{outdir}/dedup/{sample}_dedup.bam", outdir=config["outdir"], sample=samples)
     final_bai = expand("{outdir}/dedup/{sample}_dedup.bam.bai", outdir=config["outdir"], sample=samples)
@@ -25,6 +31,7 @@ rule all:
 ruleorder: umi_extract_merged > umi_extract_paired
 ruleorder: align_merged > align_paired
 
+# Quality Check with FastQC
 rule fastqc:
     input:
         r1=lambda wildcards: samples[wildcards.sample]["R1"],
@@ -40,6 +47,7 @@ rule fastqc:
         fastqc -t {threads} -o {params.outdir} {input.r1} {input.r2}
         """
 
+# Read Merging
 rule bbmerge:
     input:
         r1=lambda wildcards: samples[wildcards.sample]["R1"],
@@ -58,6 +66,7 @@ rule bbmerge:
             threads={threads}
         """
 
+# UMI Extraction (merged)
 rule umi_extract_merged:
     input:
         merged="{outdir}/merged/{sample}_merged.fastq.gz"
@@ -77,6 +86,7 @@ rule umi_extract_merged:
             2> {output.log}
         """
 
+# UMI Extraction (paired)
 rule umi_extract_paired:
     input:
         r1=lambda wildcards: samples[wildcards.sample]["R1"],
@@ -100,6 +110,7 @@ rule umi_extract_paired:
             2> {output.log}
         """
 
+# Alignment with Bowtie2 (merged)
 rule align_merged:
     input:
         fq=lambda wc: (f"{config['outdir']}/umi/{wc.sample}_extracted.fastq.gz"
@@ -120,6 +131,7 @@ rule align_merged:
         samtools index {output.bam}
         """
 
+# Alignment with Bowtie2 (paired)
 rule align_paired:
     input:
         r1=lambda wc: (
@@ -147,6 +159,7 @@ rule align_paired:
         samtools index {output.bam}
         """
 
+# UMI Deduplication
 rule dedup:
     input:
         bam=lambda wc: (f"{config['outdir']}/bam_merged/{wc.sample}.bam"
@@ -171,6 +184,7 @@ rule dedup:
         samtools index {output.bam}
         """
 
+# MultiQC - collect all FastQC outputs
 rule multiqc:
     input:
         expand("{outdir}/fastqc/{sample}_R1_fastqc.html", outdir=config["outdir"], sample=samples)
