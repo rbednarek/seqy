@@ -90,7 +90,22 @@ Help:
 snakemake --help
 ```
 
-An example config.yaml file can be found in the `./snakemake` folder.
+An example config.yaml file can be found here: `./test_data/snk_config.yaml`).
+
+## Example Dataset for Pipeline Testing
+For testing purposes, several paired-end FASTQ files with UMIs have been generated alongside a reference genome. Files can be found here: `./test_data`
+
+In the main `seqy` run one of the following:
+
+**Nextflow (with UMI Deduplication)**:
+```bash
+nextflow run ./nextflow/seqy.nf --samplesheet ./test_data/samplesheet.csv --reference_genome ./test_data/genome/genome.fa --merged true --umi_len 12 --umi_regex ATCGTCGGA
+```
+
+**Snakemake (with UMI Deduplication)***
+```bash
+snakemake --snakefile  ./snakemake/seqy.snakefile --configfile ./test_data/snk_config.yaml --cores 4
+```
 
 ## Troubleshooting
 

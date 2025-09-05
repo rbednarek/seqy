@@ -1,3 +1,0 @@
-sample_name,R1,R2
-sim1,./test_files/fastq/sim1_R1.fastq,./test_files/fastq/sim1_R2.fastq
-sim2,./test_files/fastq/sim2_R1.fastq,./test_files/fastq/sim2_R2.fastq
