@@ -97,12 +97,12 @@ For testing purposes, several paired-end FASTQ files with UMIs have been generat
 
 In the main `seqy` run one of the following:
 
-**Nextflow (with UMI Deduplication)**:
+**Nextflow (with UMI Deduplication):**:
 ```bash
 nextflow run ./nextflow/seqy.nf --samplesheet ./test_data/samplesheet.csv --reference_genome ./test_data/genome/genome.fa --merged true --umi_len 12 --umi_regex ATCGTCGGA
 ```
 
-**Snakemake (with UMI Deduplication)***
+**Snakemake (with UMI Deduplication):**
 ```bash
 snakemake --snakefile  ./snakemake/seqy.snakefile --configfile ./test_data/snk_config.yaml --cores 4
 ```
