@@ -70,7 +70,7 @@ This version requires a YAML input file in addition to a Samplesheet.
 Basic Usage:
 
 ```bash
-snakemake --snakefile ./snakemake/seqy.snakefile --configfile config.yaml --outdir ./results
+snakemake --snakefile ./snakemake/seqy.snakefile --configfile config.yaml --cores 4
 ```
 
 Command Line Parameters:

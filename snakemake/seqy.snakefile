@@ -8,8 +8,12 @@ if config.get('umi_len'):
     final_bam = expand("{outdir}/dedup/{sample}_dedup.bam", outdir=config["outdir"], sample=samples)
     final_bai = expand("{outdir}/dedup/{sample}_dedup.bam.bai", outdir=config["outdir"], sample=samples)
 else:
-    final_bam = expand("{outdir}/bam/{sample}.bam", outdir=config["outdir"], sample=samples)
-    final_bai = expand("{outdir}/bam/{sample}.bam.bai", outdir=config["outdir"], sample=samples)
+    if config.get('merged'):
+        final_bam = expand("{outdir}/bam_merged/{sample}.bam", outdir=config["outdir"], sample=samples)
+        final_bai = expand("{outdir}/bam_merged/{sample}.bam.bai", outdir=config["outdir"], sample=samples)
+    else:
+        final_bam = expand("{outdir}/bam_paired/{sample}.bam", outdir=config["outdir"], sample=samples)
+        final_bai = expand("{outdir}/bam_paired/{sample}.bam.bai", outdir=config["outdir"], sample=samples)
 
 rule all:
     input:
@@ -17,19 +21,9 @@ rule all:
         final_bam,
         final_bai
 
-if config.get('merged'):
-    exec('use rule bbmerge as merge')
-
-
-if config.get('umi_len'):
-    if config.get('merged'):
-        exec('use rule umi_extract_merged as umi_extract')
-        exec('use rule align_merged as align')
-        exec('use rule dedup as dedup')
-    else:
-        exec('use rule umi_extract_paired as umi_extract')
-        exec('use rule align_paired as align')
-
+# Rule order to resolve ambiguity
+ruleorder: umi_extract_merged > umi_extract_paired
+ruleorder: align_merged > align_paired
 
 rule fastqc:
     input:
@@ -68,18 +62,19 @@ rule umi_extract_merged:
     input:
         merged="{outdir}/merged/{sample}_merged.fastq.gz"
     output:
-        fastq="{outdir}/umi/{sample}_extracted.fastq.gz"
+        fastq="{outdir}/umi/{sample}_extracted.fastq.gz",
+        log="{outdir}/umi/{sample}_extracted.log"
     params:
-        pattern=config["umi_regex"],
-        len=config["umi_len"]
+        pattern=config.get("umi_regex"),
+        len=config.get("umi_len")
     shell:
         """
         umi_tools extract \
             --extract-method=regex \
-            --bc-pattern=".{${params.umi_len}}(?=${params.umi_regex})" \
+            --bc-pattern="(?P<umi_1>.{{{params.len}}})(?P<discard_1>{params.pattern})" \
             --stdin={input.merged} \
             --stdout={output.fastq} \
-            2> {outdir}/umi/{sample}_extracted.log
+            2> {output.log}
         """
 
 rule umi_extract_paired:
@@ -88,37 +83,39 @@ rule umi_extract_paired:
         r2=lambda wildcards: samples[wildcards.sample]["R2"]
     output:
         r1="{outdir}/umi/{sample}_R1_extracted.fastq.gz",
-        r2="{outdir}/umi/{sample}_R2_extracted.fastq.gz"
+        r2="{outdir}/umi/{sample}_R2_extracted.fastq.gz",
+        log="{outdir}/umi/{sample}_extracted.log"
     params:
-        pattern=config["umi_regex"],
-        len=config["umi_len"]
+        pattern=config.get("umi_regex"),
+        len=config.get("umi_len")
     shell:
         """
         umi_tools extract \
             --extract-method=regex \
-            --bc-pattern=".{${params.umi_len}}(?=${params.umi_regex})" \
+            --bc-pattern="(?P<umi_1>.{{{params.len}}})(?P<discard_1>{params.pattern})" \
             --stdin={input.r1} \
             --stdout={output.r1} \
             --read2-in={input.r2} \
-            --read2-out={output.r2}
+            --read2-out={output.r2} \
+            2> {output.log}
         """
 
 rule align_merged:
     input:
-    fq = lambda wc: (f"{config['outdir']}/umi/{wc.sample}_extracted.fastq.gz"
-        if config.get("umi_len")
-        else f"{config['outdir']}/merged/{wc.sample}_merged.fastq.gz"),        
-    ref=config["reference"]
+        fq=lambda wc: (f"{config['outdir']}/umi/{wc.sample}_extracted.fastq.gz"
+            if config.get("umi_len")
+            else f"{config['outdir']}/merged/{wc.sample}_merged.fastq.gz"),        
+        ref=config["reference"]
     output:
-        bam="{outdir}/bam/{sample}.bam",
-        bai="{outdir}/bam/{sample}.bam.bai"
+        bam="{outdir}/bam_merged/{sample}.bam",  # Different directory
+        bai="{outdir}/bam_merged/{sample}.bam.bai"
     threads: 4
     shell:
         """
         if [ ! -f {input.ref}.1.bt2 ]; then
             bowtie2-build {input.ref} {input.ref}
         fi
-        bowtie2 -p {threads} -x {input.ref} -U {input.fq} | samtools view -bS - |
+        bowtie2 -p {threads} --local -x {input.ref} -U {input.fq} | samtools view -bS - | \
             samtools sort -@ {threads} -o {output.bam}
         samtools index {output.bam}
         """
@@ -137,35 +134,40 @@ rule align_paired:
         ),
         ref=config["reference"]
     output:
-        bam="{outdir}/bam/{sample}.bam",
-        bai="{outdir}/bam/{sample}.bam.bai"
+        bam="{outdir}/bam_paired/{sample}.bam",  # Different directory
+        bai="{outdir}/bam_paired/{sample}.bam.bai"
     threads: 4
     shell:
         """
         if [ ! -f {input.ref}.1.bt2 ]; then
             bowtie2-build {input.ref} {input.ref}
         fi
-        bowtie2 -p {threads} -x {input.ref} -1 {input.r1} -2 {input.r2} | samtools view -bS - |
+        bowtie2 -p {threads} --local -x {input.ref} -1 {input.r1} -2 {input.r2} | samtools view -bS - | \
             samtools sort -@ {threads} -o {output.bam}
         samtools index {output.bam}
         """
 
 rule dedup:
     input:
-        bam="{outdir}/bam/{sample}.bam",
-        bai="{outdir}/bam/{sample}.bam.bai"
+        bam=lambda wc: (f"{config['outdir']}/bam_merged/{wc.sample}.bam"
+                        if config.get('merged')
+                        else f"{config['outdir']}/bam_paired/{wc.sample}.bam"),
+        bai=lambda wc: (f"{config['outdir']}/bam_merged/{wc.sample}.bam.bai"
+                        if config.get('merged')
+                        else f"{config['outdir']}/bam_paired/{wc.sample}.bam.bai")
     output:
         bam="{outdir}/dedup/{sample}_dedup.bam",
-        bai="{outdir}/dedup/{sample}_dedup.bam.bai"
+        bai="{outdir}/dedup/{sample}_dedup.bam.bai",
+        log="{outdir}/dedup/{sample}_dedup.log"
     params:
-        paired = "--paired" if not config.get('merged') else ""
+        paired="--paired" if not config.get('merged') else ""
     shell:
         """
         umi_tools dedup \
             {params.paired} \
             -I {input.bam} \
             -S {output.bam} \
-            2> {outdir}/dedup/{sample}_dedup.log
+            2> {output.log}
         samtools index {output.bam}
         """
 
@@ -176,5 +178,5 @@ rule multiqc:
         html="{outdir}/multiqc/multiqc_report.html"
     shell:
         """
-        multiqc {config['outdir']} -o {config['outdir']}/multiqc
+        multiqc {config[outdir]} -o {config[outdir]}/multiqc
         """
