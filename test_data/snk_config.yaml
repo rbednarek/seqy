@@ -3,4 +3,4 @@ samplesheet: "./test_data/samplesheet.csv" # Replace with your actual Sampleshee
 outdir: "./results"
 umi_len: 12  # Remove or null to skip UMI extraction
 umi_regex: "ATCGTCGGA" # only include if using UMIs 
-merged: true  # true to use bbmerge
+merged: false  # true to use bbmerge

@@ -4,7 +4,7 @@ nextflow.enable.dsl = 2
 
 /*
  * NGS Analysis Pipeline
- * Workflow: FastQC -> Optional Merge -> UMI Extract -> Alignment
+ * Author: Ryland Bednarek
  */
 
 // Pipeline parameters
@@ -16,7 +16,7 @@ params.umi_len = null
 params.umi_regex = 'ATCGTCGGA'
 params.help = false
 
-// Help message
+// Help
 if (params.help) {
     log.info """
     NGS Analysis Pipeline
@@ -73,8 +73,7 @@ workflow {
     
     // Pipeline steps
     fastqc_out = FASTQC(samples_ch)
-    
-    // Conditional workflow based on merging and UMI extraction
+    // Merging and UMI extraction (optional - contingent on merged and umi_len params)
     if (params.merged) {
         bbmerge_out = BBMERGE(samples_ch)
         if (params.umi_len) {
@@ -95,8 +94,7 @@ workflow {
             }
         }
     }
-    
-    // Alignment (Bowtie2)
+    // Alignment
     align_out = ALIGN(processed_reads_ch, reference_ch)
 
     // UMI deduplication (optional - contingent on umi len param)
@@ -116,6 +114,7 @@ workflow {
  * PROCESSES
  */
 
+// Quality Check with FastQC
 process FASTQC {
     tag "$sample_name"
     publishDir "${params.outdir}/fastqc", mode: 'copy'
@@ -132,6 +131,7 @@ process FASTQC {
     """
 }
 
+// Read Merging
 process BBMERGE {
     tag "$sample_name"
     publishDir "${params.outdir}/merged", mode: 'copy'
@@ -154,6 +154,7 @@ process BBMERGE {
     """
 }
 
+// UMI Extraction (merged)
 process UMI_EXTRACT_MERGED {
     tag "$sample_name"
     publishDir "${params.outdir}/umi_extracted", mode: 'copy'
@@ -176,6 +177,7 @@ process UMI_EXTRACT_MERGED {
     """
 }
 
+// UMI Extraction (paired)
 process UMI_EXTRACT_PAIRED {
     tag "$sample_name"
     publishDir "${params.outdir}/umi_extracted", mode: 'copy'
@@ -200,6 +202,7 @@ process UMI_EXTRACT_PAIRED {
     """
 }
 
+// Alignment with Bowtie2
 process ALIGN {
     tag "$sample_name"
     publishDir "${params.outdir}/alignments", mode: 'copy'
@@ -266,6 +269,7 @@ process ALIGN {
     } 
 }
 
+// UMI Deduplication (merged)
 process UMI_DEDUP_MERGED {
     tag "$sample_name"
     publishDir "${params.outdir}/dedup_bam", mode: 'copy'
@@ -288,6 +292,7 @@ process UMI_DEDUP_MERGED {
     """
 }
 
+// UMI Deduplication (paired)
 process UMI_DEDUP_PAIRED {
     tag "$sample_name"
     publishDir "${params.outdir}/dedup_bam", mode: 'copy'
@@ -311,6 +316,7 @@ process UMI_DEDUP_PAIRED {
     """
 }
 
+// MultiQC - collect all FastQC outputs
 process MULTIQC {
     publishDir "${params.outdir}/multiqc", mode: 'copy'
 
