@@ -95,7 +95,7 @@ An example config.yaml file can be found here: `./test_data/snk_config.yaml`).
 ## Example Dataset for Pipeline Testing
 For testing purposes, several paired-end FASTQ files with UMIs have been generated alongside a reference genome. Files can be found here: `./test_data`
 
-In the main `seqy` run one of the following:
+In the main `seqy` directory run one of the following:
 
 **Nextflow (with UMI Deduplication):**:
 ```bash
