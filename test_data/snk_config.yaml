@@ -1,0 +1,6 @@
+reference: "./test_data/genome/genome.fa" # Replace with your actual reference
+samplesheet: "./test_data/samplesheet.csv" # Replace with your actual Samplesheet
+outdir: "./results"
+umi_len: 12  # Remove or null to skip UMI extraction
+umi_regex: "ATCGTCGGA" # only include if using UMIs 
+merged: true  # true to use bbmerge
