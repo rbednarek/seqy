@@ -12,27 +12,25 @@ git clone https://github.com/rbednarek/seqy.git
 cd seqy
 ```
 
-
 ### Step 2: Set Up Conda Environment
-
-Run the config script to create a new conda environment and install all required dependencies.
+Create a new conda environment and install all required dependencies.
 
 **Nextflow:**
 ```bash
-bash ./config.sh nextflow
+make nextflow
 ```
 **Snakemake:**
 ```bash
-bash ./config.sh snakemake
+make snakemake
 ```
 This script will:
 - Create a new conda environment named `seqy`
 - Install workflow manager and other required software packages
-- **Note:** If you want to install both nextflow and snakemake in this environment simply run `bash ./config.sh`
+- **Note:** If you want to install both nextflow and snakemake in this environment simply run `make setup-all`
 
 ### Step 3: Activate the Envrionment
 
-After the setup script completes, activate the conda environment if necessary:
+Activate the conda environment if necessary:
 
 ```bash
 conda activate seqy

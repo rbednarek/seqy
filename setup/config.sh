@@ -73,6 +73,7 @@ base_pkgs=(
     samtools
     fastqc
     multiqc
+    pre-commit
 )
 
 case "$workflow" in
